@@ -1,0 +1,45 @@
+# ---------------------------------------------------------------------------
+# Version control
+# ---------------------------------------------------------------------------
+.git
+.gitattributes
+.github
+
+# ---------------------------------------------------------------------------
+# Local dependencies - installed inside the image instead
+# ---------------------------------------------------------------------------
+node_modules
+vendor
+
+# ---------------------------------------------------------------------------
+# Local environment files - never bake secrets into the image.
+# Compose passes them at runtime via `env_file`.
+# The Docker example file is kept so the image stays self-contained.
+# ---------------------------------------------------------------------------
+.env
+.env.*
+!.env.docker.example
+
+# ---------------------------------------------------------------------------
+# Built front-end assets - rebuilt by the Node build stage
+# ---------------------------------------------------------------------------
+public/build
+
+# ---------------------------------------------------------------------------
+# Local logs, caches and test artefacts
+# ---------------------------------------------------------------------------
+storage/logs/*.log
+storage/framework/cache/data/*
+storage/framework/sessions/*
+storage/framework/views/*
+.phpunit.result.cache
+coverage
+
+# ---------------------------------------------------------------------------
+# Editor / OS cruft
+# ---------------------------------------------------------------------------
+.idea
+.vscode
+*.swp
+.DS_Store
+Thumbs.db
