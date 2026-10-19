@@ -1,0 +1,10 @@
+.git
+.github
+.agents
+.claude
+docker
+docker-compose.yml
+Makefile
+tests
+/vendor
+/node_modules
