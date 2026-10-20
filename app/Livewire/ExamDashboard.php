@@ -11,10 +11,17 @@ class ExamDashboard extends Component
 {
     public function render()
     {
-        $exams = app(ExamService::class)->getAvailableExams(auth()->user());
+        $service = app(ExamService::class);
+        $user = auth()->user();
+
+        $activeAttempts = $service->getActiveAttempts($user);
+        $exams = $service->getAvailableExams($user);
+        $completedAttempts = $service->getCompletedAttempts($user);
 
         return view('livewire.exam-dashboard', [
+            'activeAttempts' => $activeAttempts,
             'exams' => $exams,
+            'completedAttempts' => $completedAttempts,
         ]);
     }
 }

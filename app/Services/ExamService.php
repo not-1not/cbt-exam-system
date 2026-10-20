@@ -16,6 +16,19 @@ class ExamService
 {
     public function startAttempt(User $user, Exam $exam): ExamAttempt
     {
+        $inProgressAttempt = ExamAttempt::where('user_id', $user->id)
+            ->where('exam_id', $exam->id)
+            ->where('status', 'in_progress')
+            ->first();
+
+        if ($inProgressAttempt) {
+            if ($inProgressAttempt->ended_at && Carbon::now()->gt($inProgressAttempt->ended_at)) {
+                $this->autoSubmit($inProgressAttempt);
+            } else {
+                return $inProgressAttempt->load('exam.questions.options');
+            }
+        }
+
         $this->validateCanStartAttempt($user, $exam);
 
         return DB::transaction(function () use ($user, $exam) {
@@ -47,21 +60,13 @@ class ExamService
             throw ValidationException::withMessages(['exam' => 'Ujian sudah berakhir.']);
         }
 
-        $attemptsCount = ExamAttempt::where('user_id', $user->id)
+        $completedAttemptsCount = ExamAttempt::where('user_id', $user->id)
             ->where('exam_id', $exam->id)
+            ->where('status', 'completed')
             ->count();
 
-        if ($exam->max_attempts && $attemptsCount >= $exam->max_attempts) {
+        if ($exam->max_attempts && $completedAttemptsCount >= $exam->max_attempts) {
             throw ValidationException::withMessages(['exam' => 'Maksimal percobaan sudah tercapai.']);
-        }
-
-        $inProgressAttempt = ExamAttempt::where('user_id', $user->id)
-            ->where('exam_id', $exam->id)
-            ->where('status', 'in_progress')
-            ->first();
-
-        if ($inProgressAttempt) {
-            throw ValidationException::withMessages(['exam' => 'Anda memiliki ujian yang sedang berlangsung.']);
         }
     }
 
@@ -152,6 +157,33 @@ class ExamService
         return round(($pointsEarned / $totalPoints) * 100, 2);
     }
 
+    public function getActiveAttempts(User $user): Collection
+    {
+        $attempts = ExamAttempt::where('user_id', $user->id)
+            ->where('status', 'in_progress')
+            ->with(['exam.questions'])
+            ->get();
+
+        return $attempts->filter(function (ExamAttempt $attempt) {
+            if ($attempt->ended_at && Carbon::now()->gt($attempt->ended_at)) {
+                $this->autoSubmit($attempt);
+
+                return false;
+            }
+
+            return true;
+        })->values();
+    }
+
+    public function getCompletedAttempts(User $user): Collection
+    {
+        return ExamAttempt::where('user_id', $user->id)
+            ->where('status', 'completed')
+            ->with('exam')
+            ->latest('submitted_at')
+            ->get();
+    }
+
     public function getAvailableExams(User $user): Collection
     {
         $now = Carbon::now();
@@ -163,33 +195,22 @@ class ExamService
             ->where(function ($query) use ($now) {
                 $query->whereNull('end_at')->orWhere('end_at', '>=', $now);
             })
-            ->whereDoesntHave('attempts', function ($query) use ($user) {
-                $query->where('user_id', $user->id)
-                    ->where('status', 'in_progress');
-            })
-            ->where(function ($query) use ($user) {
-                $query->whereNull('max_attempts')
-                    ->orWhereHas('attempts', function ($q) use ($user) {
-                        $q->where('user_id', $user->id);
-                    }, '<', DB::raw('exams.max_attempts'))
-                    ->orWhereDoesntHave('attempts', function ($q) use ($user) {
-                        $q->where('user_id', $user->id);
-                    });
-            })
-            ->withCount(['questions', 'attempts as attempts_count' => function ($query) use ($user) {
-                $query->where('user_id', $user->id);
+            ->withCount(['questions', 'attempts as completed_attempts_count' => function ($query) use ($user) {
+                $query->where('user_id', $user->id)->where('status', 'completed');
             }])
             ->get()
             ->filter(function ($exam) use ($user) {
                 if ($exam->max_attempts) {
-                    $attemptsCount = ExamAttempt::where('user_id', $user->id)
+                    $completedCount = ExamAttempt::where('user_id', $user->id)
                         ->where('exam_id', $exam->id)
+                        ->where('status', 'completed')
                         ->count();
 
-                    return $attemptsCount < $exam->max_attempts;
+                    return $completedCount < $exam->max_attempts;
                 }
 
                 return true;
-            });
+            })
+            ->values();
     }
 }

@@ -5,6 +5,9 @@ use App\Livewire\ExamInstructions;
 use App\Livewire\ExamResult;
 use App\Livewire\ExamTake;
 use App\Models\Exam;
+use App\Models\ExamAttempt;
+use App\Models\ExamAttemptAnswer;
+use App\Models\Question;
 use App\Models\User;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -50,8 +53,15 @@ Route::get('/db-setup', function () {
         );
         $proctor->syncRoles(['proctor']);
 
+        // Reset demo student's previous empty attempts so student can start fresh with questions
+        ExamAttemptAnswer::whereHas('attempt', function ($q) use ($student) {
+            $q->where('user_id', $student->id);
+        })->delete();
+        ExamAttempt::where('user_id', $student->id)->delete();
+
         $userCount = User::count();
         $examCount = Exam::count();
+        $questionsCount = Question::count();
         $usersList = User::with('roles')->get()->map(function ($u) {
             return [
                 'email' => $u->email,
@@ -62,11 +72,12 @@ Route::get('/db-setup', function () {
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Database successfully connected, migrated, and seeded!',
+            'message' => 'Database successfully connected, migrated, and seeded with questions!',
             'driver' => $driver,
             'database' => $database,
             'users_count' => $userCount,
             'exams_count' => $examCount,
+            'questions_count' => $questionsCount,
             'users' => $usersList,
             'default_logins' => [
                 'admin' => ['email' => 'admin@exam.test', 'password' => 'password'],
