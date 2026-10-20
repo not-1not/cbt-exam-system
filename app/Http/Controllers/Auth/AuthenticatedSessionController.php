@@ -33,14 +33,16 @@ class AuthenticatedSessionController extends Controller
 
         $user = Auth::user();
         if ($user->hasRole('student')) {
-            return redirect()->intended(route('exam.dashboard'));
+            $request->session()->forget('url.intended');
+
+            return redirect()->route('exam.dashboard');
         }
 
         if ($user->hasAnyRole(['admin', 'proctor', 'teacher'])) {
             return redirect()->intended('/admin');
         }
 
-        return redirect()->intended('/exam');
+        return redirect()->route('exam.dashboard');
     }
 
     public function destroy(Request $request): RedirectResponse

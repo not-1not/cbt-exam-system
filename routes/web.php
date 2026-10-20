@@ -8,6 +8,7 @@ use App\Models\Exam;
 use App\Models\User;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/db-setup', function () {
@@ -24,8 +25,40 @@ Route::get('/db-setup', function () {
         Artisan::call('db:seed', ['--force' => true]);
         $output[] = trim(Artisan::output());
 
+        // Guarantee role assignments for standard demo accounts
+        $admin = User::firstOrCreate(
+            ['email' => 'admin@exam.test'],
+            ['name' => 'Admin User', 'password' => Hash::make('password'), 'email_verified_at' => now()]
+        );
+        $admin->syncRoles(['admin']);
+
+        $student = User::firstOrCreate(
+            ['email' => 'student@exam.test'],
+            ['name' => 'Student User', 'password' => Hash::make('password'), 'email_verified_at' => now()]
+        );
+        $student->syncRoles(['student']);
+
+        $teacher = User::firstOrCreate(
+            ['email' => 'teacher@exam.test'],
+            ['name' => 'Teacher User', 'password' => Hash::make('password'), 'email_verified_at' => now()]
+        );
+        $teacher->syncRoles(['teacher']);
+
+        $proctor = User::firstOrCreate(
+            ['email' => 'proctor@exam.test'],
+            ['name' => 'Proctor User', 'password' => Hash::make('password'), 'email_verified_at' => now()]
+        );
+        $proctor->syncRoles(['proctor']);
+
         $userCount = User::count();
         $examCount = Exam::count();
+        $usersList = User::with('roles')->get()->map(function ($u) {
+            return [
+                'email' => $u->email,
+                'name' => $u->name,
+                'roles' => $u->roles->pluck('name')->all(),
+            ];
+        });
 
         return response()->json([
             'status' => 'success',
@@ -34,6 +67,7 @@ Route::get('/db-setup', function () {
             'database' => $database,
             'users_count' => $userCount,
             'exams_count' => $examCount,
+            'users' => $usersList,
             'default_logins' => [
                 'admin' => ['email' => 'admin@exam.test', 'password' => 'password'],
                 'student' => ['email' => 'student@exam.test', 'password' => 'password'],
@@ -61,8 +95,8 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::middleware('role:student')->group(function () {
+Route::middleware(['auth'])->group(function () {
+    Route::middleware('role:student,admin,teacher,proctor')->group(function () {
         Route::get('/exam', ExamDashboard::class)->name('exam.dashboard');
         Route::get('/exam/{exam}/instructions', ExamInstructions::class)->name('exam.instructions');
         Route::get('/exam/attempt/{attempt}/take', ExamTake::class)->name('exam.take');

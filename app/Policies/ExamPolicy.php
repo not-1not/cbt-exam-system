@@ -38,7 +38,6 @@ class ExamPolicy
     public function start(User $user, Exam $exam): bool
     {
         return $exam->is_published
-            && $exam->isOpen()
-            && ! $user->hasRole('admin');
+            && $exam->isOpen();
     }
 }
