@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -20,14 +23,18 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         // Auto-migrate on Vercel if connecting to remote Postgres and tables don't exist yet
-        if (isset($_ENV['VERCEL']) || isset($_SERVER['VERCEL'])) {
-            try {
-                if (! \Illuminate\Support\Facades\Schema::hasTable('users')) {
-                    \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
-                    \Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
+        if (getenv('VERCEL') || isset($_SERVER['VERCEL']) || isset($_ENV['VERCEL'])) {
+            $flag = '/tmp/.migrated';
+            if (! file_exists($flag)) {
+                try {
+                    if (! Schema::hasTable('users')) {
+                        Artisan::call('migrate', ['--force' => true]);
+                        Artisan::call('db:seed', ['--force' => true]);
+                    }
+                    @touch($flag);
+                } catch (\Throwable $e) {
+                    Log::error('Auto-migration error: '.$e->getMessage());
                 }
-            } catch (\Throwable $e) {
-                // Ignore if DB is unreachable or during initial build
             }
         }
     }
