@@ -111,6 +111,26 @@ class ExamTake extends Component
         $this->answers[$questionId] = $optionId;
     }
 
+    public function updatedAnswers($value, $key)
+    {
+        if ($this->attempt->status !== 'in_progress') {
+            return;
+        }
+
+        if (str_ends_with($key, '_text')) {
+            $questionId = str_replace('_text', '', $key);
+            $question = Question::find($questionId);
+            if ($question) {
+                app(ExamService::class)->saveAnswer($this->attempt, $question, null, $value);
+            }
+        } elseif (is_numeric($key)) {
+            $question = Question::find($key);
+            if ($question) {
+                app(ExamService::class)->saveAnswer($this->attempt, $question, $value);
+            }
+        }
+    }
+
     public function toggleFlag($questionId)
     {
         if (in_array($questionId, $this->flaggedQuestions)) {

@@ -142,28 +142,46 @@
         </div>
     </div>
 
-    <div wire:model="showSubmitModal" class="fixed inset-0 z-50 overflow-y-auto" wire:ignore.self>
-        <div class="flex min-h-full items-center justify-center p-4">
-            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" wire:click="showSubmitModal = false"></div>
+    @if($showSubmitModal)
+        <div class="fixed inset-0 z-50 overflow-y-auto">
+            <div class="flex min-h-full items-center justify-center p-4">
+                <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity" wire:click="$set('showSubmitModal', false)"></div>
 
-            <div class="relative bg-white rounded-lg shadow-xl max-w-md w-full">
-                <div class="p-6">
-                    <h3 class="text-lg font-semibold text-gray-900 mb-2">Konfirmasi Pengiriman Ujian</h3>
-                    <p class="text-gray-600 mb-4">
-                        Anda telah menjawab <strong>{{ $answeredCount }}</strong> dari <strong>{{ count($questions) }}</strong> soal.
+                <div class="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 z-10 border border-gray-100">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="h-10 w-10 rounded-full bg-red-100 text-red-600 flex items-center justify-center flex-shrink-0">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-900">Konfirmasi Pengiriman Ujian</h3>
+                            <p class="text-xs text-gray-500">Periksa kembali sebelum mengirim jawaban.</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-4 text-sm text-gray-700 space-y-1">
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">Soal Terjawab:</span>
+                            <strong class="text-emerald-600 font-bold">{{ $answeredCount }} dari {{ count($questions) }} Soal</strong>
+                        </div>
                         @if($answeredCount < count($questions))
-                            <br>Masih ada <strong>{{ count($questions) - $answeredCount }}</strong> soal yang belum dijawab.
+                            <div class="flex justify-between pt-1 border-t border-slate-200 text-amber-700">
+                                <span>Belum Dijawab:</span>
+                                <strong class="font-bold">{{ count($questions) - $answeredCount }} Soal</strong>
+                            </div>
                         @endif
-                    </p>
-                    <p class="text-sm text-gray-500">Apakah Anda yakin ingin mengirim ujian? Tindakan ini tidak dapat dibatalkan.</p>
+                    </div>
 
-                    <div class="mt-6 flex justify-end space-x-3">
-                        <button wire:click="showSubmitModal = false"
-                                class="px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                            Batal
+                    <p class="text-xs text-gray-500 mb-6">Apakah Anda yakin ingin menyelesaikan ujian ini sekarang? Setelah dikirim, jawaban tidak dapat diubah lagi.</p>
+
+                    <div class="flex justify-end gap-3">
+                        <button type="button"
+                                wire:click="$set('showSubmitModal', false)"
+                                class="px-4 py-2.5 border border-gray-300 text-xs font-semibold rounded-xl text-gray-700 bg-white hover:bg-gray-50 transition">
+                            Batal, Lanjut Kerjakan
                         </button>
-                        <button wire:click="confirmSubmit"
-                                class="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                        <button type="button"
+                                wire:click="confirmSubmit"
+                                class="px-5 py-2.5 text-xs font-bold rounded-xl text-white bg-red-600 hover:bg-red-500 transition shadow-md shadow-red-500/20"
                                 {{ $isSubmitting ? "disabled" : "" }}>
                             {{ $isSubmitting ? "Mengirim..." : "Ya, Kirim Ujian" }}
                         </button>
@@ -171,7 +189,7 @@
                 </div>
             </div>
         </div>
-    </div>
+    @endif
 
     @if($attempt->status !== "in_progress")
         <script>
