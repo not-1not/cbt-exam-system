@@ -15,6 +15,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
 
     @livewireStyles
+    <style>
+        [x-cloak] { display: none !important; }
+    </style>
 </head>
 <body class="h-full font-sans antialiased bg-gray-50 text-gray-900 flex flex-col min-h-screen">
     @auth

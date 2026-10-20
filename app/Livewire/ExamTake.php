@@ -96,19 +96,24 @@ class ExamTake extends Component
         return redirect()->route('exam.result', $this->attempt);
     }
 
-    public function saveAnswer($questionId, $optionId)
+    public function saveAnswer($questionId, $optionId = null, $answerText = null)
     {
         if ($this->attempt->status !== 'in_progress') {
-            return;
+            return false;
         }
 
         $question = Question::find($questionId);
         if (! $question) {
-            return;
+            return false;
         }
 
-        app(ExamService::class)->saveAnswer($this->attempt, $question, $optionId);
+        app(ExamService::class)->saveAnswer($this->attempt, $question, $optionId, $answerText);
         $this->answers[$questionId] = $optionId;
+        if ($answerText !== null) {
+            $this->answers[$questionId.'_text'] = $answerText;
+        }
+
+        return true;
     }
 
     public function updatedAnswers($value, $key)
