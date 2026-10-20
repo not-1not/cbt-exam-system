@@ -2,11 +2,13 @@
 
 namespace App\Filament\Resources\ExamResource\RelationManagers;
 
+use App\Services\QuestionImportService;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms;
+use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Tables;
@@ -89,7 +91,47 @@ class QuestionsRelationManager extends RelationManager
                     ]),
             ])
             ->headerActions([
-                CreateAction::make(),
+                CreateAction::make()
+                    ->label('Tambah Soal Manual'),
+                Tables\Actions\Action::make('bulkImport')
+                    ->label('Import Soal Massal')
+                    ->icon('heroicon-o-arrow-up-tray')
+                    ->color('success')
+                    ->modalHeading('Import Soal Massal ke Ujian Ini')
+                    ->modalDescription('Salin teks soal dan pilihan jawaban dari Word/Docs ke kotak di bawah ini.')
+                    ->modalSubmitActionLabel('Import Sekarang')
+                    ->form([
+                        Forms\Components\TextInput::make('default_points')
+                            ->label('Poin per Soal')
+                            ->numeric()
+                            ->default(1)
+                            ->required(),
+                        Forms\Components\Textarea::make('content')
+                            ->label('Teks Soal')
+                            ->helperText('Tandai kunci jawaban dengan tanda bintang (*) di depan opsi (contoh: *C. Jawaban) atau tulis KUNCI: C di bawah opsi.')
+                            ->placeholder("1. Apa ibu kota negara Indonesia?\nA. Bandung\nB. Surabaya\n*C. Jakarta\nD. Medan\n\n2. Berapakah hasil dari 5 x 5?\nA. 20\nB. 30\nC. 25\nD. 35\nKUNCI: C")
+                            ->rows(14)
+                            ->required(),
+                    ])
+                    ->action(function (array $data): void {
+                        $count = QuestionImportService::import(
+                            (int) $this->getOwnerRecord()->id,
+                            $data['content'],
+                            (int) $data['default_points']
+                        );
+
+                        if ($count > 0) {
+                            Notification::make()
+                                ->title("Berhasil mengimpor {$count} soal ke ujian ini!")
+                                ->success()
+                                ->send();
+                        } else {
+                            Notification::make()
+                                ->title('Tidak ada soal yang berhasil diparsing. Periksa kembali format teks Anda.')
+                                ->warning()
+                                ->send();
+                        }
+                    }),
             ])
             ->actions([
                 EditAction::make(),
