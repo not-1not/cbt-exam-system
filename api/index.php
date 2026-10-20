@@ -16,14 +16,23 @@ foreach ($dirs as $dir) {
     }
 }
 
-// 2. Auto-initialize SQLite database in /tmp if running in SQLite mode and not yet present
-$dbConnection = getenv('DB_CONNECTION') ?: ($_ENV['DB_CONNECTION'] ?? 'sqlite');
-$dbDatabase = getenv('DB_DATABASE') ?: ($_ENV['DB_DATABASE'] ?? '/tmp/database.sqlite');
+// 2. Auto-detect remote PostgreSQL database (Neon, Supabase, etc.) or fallback to SQLite
+$databaseUrl = getenv('DATABASE_URL') ?: (getenv('DB_URL') ?: ($_ENV['DATABASE_URL'] ?? ($_ENV['DB_URL'] ?? null)));
 
-if ($dbConnection === 'sqlite') {
-    $seedSource = __DIR__ . '/../database/seed.sqlite';
-    if (! file_exists($dbDatabase) && file_exists($seedSource)) {
-        @copy($seedSource, $dbDatabase);
+if ($databaseUrl) {
+    putenv('DB_CONNECTION=pgsql');
+    $_ENV['DB_CONNECTION'] = 'pgsql';
+    putenv("DB_URL={$databaseUrl}");
+    $_ENV['DB_URL'] = $databaseUrl;
+} else {
+    $dbConnection = getenv('DB_CONNECTION') ?: ($_ENV['DB_CONNECTION'] ?? 'sqlite');
+    $dbDatabase = getenv('DB_DATABASE') ?: ($_ENV['DB_DATABASE'] ?? '/tmp/database.sqlite');
+
+    if ($dbConnection === 'sqlite') {
+        $seedSource = __DIR__ . '/../database/seed.sqlite';
+        if (! file_exists($dbDatabase) && file_exists($seedSource)) {
+            @copy($seedSource, $dbDatabase);
+        }
     }
 }
 
