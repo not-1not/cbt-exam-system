@@ -147,14 +147,14 @@ class ExamService
 
     public function calculateScore(ExamAttempt $attempt): float
     {
-        $totalPoints = $attempt->exam->questions()->sum('points');
-        if ($totalPoints <= 0) {
-            return 0;
+        $totalQuestions = $attempt->exam->questions()->count();
+        if ($totalQuestions <= 0) {
+            return 0.0;
         }
 
-        $pointsEarned = (float) $attempt->answers()->sum('points_earned');
+        $correctAnswers = $attempt->answers()->where('is_correct', true)->count();
 
-        return round(($pointsEarned / $totalPoints) * 100, 2);
+        return round(($correctAnswers / $totalQuestions) * 100, 2);
     }
 
     public function getActiveAttempts(User $user): Collection

@@ -131,9 +131,36 @@ class ExamServiceTest extends TestCase
         $this->service->saveAnswer($attempt, $q1, $opt1->id); // 10 pts
         $this->service->saveAnswer($attempt, $q2, $opt2->id); // 0 pts
 
-        // Total points = 20, earned = 10 -> Score = 50.00%
+        // Total questions = 2, correct = 1 -> Score = 50.00%
         $score = $this->service->calculateScore($attempt);
         $this->assertEquals(50.00, $score);
+    }
+
+    public function test_calculate_score_uses_correct_over_total_questions_percentage_formula(): void
+    {
+        $student = User::factory()->create();
+        $exam = Exam::factory()->create();
+
+        // 4 questions with unequal points to verify that points are ignored in favor of count
+        $q1 = Question::factory()->create(['exam_id' => $exam->id, 'points' => 50]);
+        $q2 = Question::factory()->create(['exam_id' => $exam->id, 'points' => 10]);
+        $q3 = Question::factory()->create(['exam_id' => $exam->id, 'points' => 5]);
+        $q4 = Question::factory()->create(['exam_id' => $exam->id, 'points' => 5]);
+
+        $opt1 = Option::factory()->correct()->create(['question_id' => $q1->id]);
+        $opt2 = Option::factory()->correct()->create(['question_id' => $q2->id]);
+        $opt3 = Option::factory()->correct()->create(['question_id' => $q3->id]);
+        $opt4 = Option::factory()->create(['question_id' => $q4->id, 'is_correct' => false]);
+
+        $attempt = $this->service->startAttempt($student, $exam);
+        $this->service->saveAnswer($attempt, $q1, $opt1->id); // benar
+        $this->service->saveAnswer($attempt, $q2, $opt2->id); // benar
+        $this->service->saveAnswer($attempt, $q3, $opt3->id); // benar
+        $this->service->saveAnswer($attempt, $q4, $opt4->id); // salah
+
+        // 3 benar dari 4 soal -> (3 / 4) * 100 = 75.00%
+        $score = $this->service->calculateScore($attempt);
+        $this->assertEquals(75.00, $score);
     }
 
     public function test_submit_attempt_marks_completed_and_saves_score(): void

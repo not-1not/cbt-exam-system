@@ -157,7 +157,7 @@
                             <div class="flex items-center gap-4">
                                 <div class="text-right">
                                     <div class="text-lg sm:text-xl font-extrabold {{ $isPassed ? 'text-emerald-600' : 'text-red-600' }}">
-                                        {{ number_format($attempt->score, 1) }}
+                                        {{ number_format($attempt->score, 1) }}%
                                     </div>
                                     <span class="inline-block text-[10px] font-bold uppercase px-2 py-0.5 rounded-full {{ $isPassed ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800' }}">
                                         {{ $isPassed ? 'LULUS' : 'BELUM LULUS' }}
