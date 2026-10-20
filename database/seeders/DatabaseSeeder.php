@@ -42,6 +42,21 @@ class DatabaseSeeder extends Seeder
                 ['name' => 'Teacher User', 'password' => Hash::make('password'), 'email_verified_at' => now()]
             );
             $teacher->assignRole('teacher');
+
+            \App\Models\Exam::firstOrCreate(
+                ['code' => 'SIMULASI-01'],
+                [
+                    'title' => 'Simulasi Ujian CBT',
+                    'description' => 'Paket ujian simulasi untuk latihan dan uji coba sistem CBT.',
+                    'duration_minutes' => 60,
+                    'shuffle_questions' => true,
+                    'shuffle_options' => true,
+                    'max_attempts' => 3,
+                    'pass_mark' => 70,
+                    'show_result_at_end' => true,
+                    'is_published' => true,
+                ]
+            );
         }
     }
 }

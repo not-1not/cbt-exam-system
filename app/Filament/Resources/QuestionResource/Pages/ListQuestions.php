@@ -13,6 +13,8 @@ use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 
+use Illuminate\Support\Str;
+
 class ListQuestions extends ListRecords
 {
     protected static string $resource = QuestionResource::class;
@@ -32,9 +34,39 @@ class ListQuestions extends ListRecords
                 ->form([
                     Select::make('exam_id')
                         ->label('Pilih Ujian Tujuan')
+                        ->helperText('Pilih paket ujian tempat soal ini disimpan. Klik (+) di samping jika ingin langsung membuat ujian baru.')
                         ->options(fn () => Exam::pluck('title', 'id'))
                         ->required()
-                        ->searchable(),
+                        ->searchable()
+                        ->createOptionForm([
+                            TextInput::make('title')
+                                ->label('Nama / Judul Ujian')
+                                ->placeholder('Contoh: Penilaian Harian Matematika')
+                                ->required(),
+                            TextInput::make('code')
+                                ->label('Kode Ujian')
+                                ->placeholder('Contoh: MTK-01')
+                                ->default(fn () => 'UJN-'.strtoupper(Str::random(4)))
+                                ->required(),
+                            TextInput::make('duration_minutes')
+                                ->label('Durasi Ujian (Menit)')
+                                ->numeric()
+                                ->default(60)
+                                ->required(),
+                        ])
+                        ->createOptionUsing(function (array $data): int {
+                            $exam = Exam::create([
+                                'title' => $data['title'],
+                                'code' => $data['code'],
+                                'duration_minutes' => (int) $data['duration_minutes'],
+                                'is_published' => true,
+                                'max_attempts' => 1,
+                                'pass_mark' => 70,
+                                'show_result_at_end' => true,
+                            ]);
+
+                            return $exam->id;
+                        }),
                     TextInput::make('default_points')
                         ->label('Poin per Soal')
                         ->numeric()
