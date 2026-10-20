@@ -8,6 +8,7 @@ use App\Services\ExamService;
 use Illuminate\Support\Facades\RateLimiter;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
+use Livewire\Attributes\Renderless;
 use Livewire\Component;
 
 #[Layout('components.layouts.app')]
@@ -39,18 +40,7 @@ class ExamTake extends Component
             return redirect()->route('exam.result', $this->attempt);
         }
 
-        $questions = $this->attempt->exam->questions;
-        if ($this->attempt->exam->shuffle_questions) {
-            $questions = $questions->shuffle();
-        }
-        if ($this->attempt->exam->shuffle_options) {
-            foreach ($questions as $q) {
-                if ($q->relationLoaded('options')) {
-                    $q->setRelation('options', $q->options->shuffle());
-                }
-            }
-        }
-        $this->questions = $questions->values()->all();
+        $this->questions = $this->attempt->exam->questions->values()->all();
         $this->loadAnswers();
         $this->calculateTimeRemaining();
     }
@@ -96,7 +86,8 @@ class ExamTake extends Component
         return redirect()->route('exam.result', $this->attempt);
     }
 
-    public function saveAnswer($questionId, $optionId = null, $answerText = null)
+    #[Renderless]
+    public function saveAnswer($questionId, $optionId = null, $answerText = null): bool
     {
         if ($this->attempt->status !== 'in_progress') {
             return false;
@@ -116,26 +107,7 @@ class ExamTake extends Component
         return true;
     }
 
-    public function updatedAnswers($value, $key)
-    {
-        if ($this->attempt->status !== 'in_progress') {
-            return;
-        }
-
-        if (str_ends_with($key, '_text')) {
-            $questionId = str_replace('_text', '', $key);
-            $question = Question::find($questionId);
-            if ($question) {
-                app(ExamService::class)->saveAnswer($this->attempt, $question, null, $value);
-            }
-        } elseif (is_numeric($key)) {
-            $question = Question::find($key);
-            if ($question) {
-                app(ExamService::class)->saveAnswer($this->attempt, $question, $value);
-            }
-        }
-    }
-
+    #[Renderless]
     public function toggleFlag($questionId)
     {
         if (in_array($questionId, $this->flaggedQuestions)) {

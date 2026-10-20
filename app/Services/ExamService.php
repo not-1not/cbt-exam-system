@@ -81,9 +81,17 @@ class ExamService
             throw ValidationException::withMessages(['attempt' => 'Waktu ujian sudah habis.']);
         }
 
-        $option = $optionId ? $question->options()->find($optionId) : null;
+        $option = null;
+        if ($optionId) {
+            $option = $question->options()->where('id', $optionId)->first();
+            if (! $option) {
+                throw ValidationException::withMessages([
+                    'option_id' => 'Pilihan jawaban tidak valid untuk soal ini.',
+                ]);
+            }
+        }
 
-        $isCorrect = $option ? $option->is_correct : false;
+        $isCorrect = $option ? (bool) $option->is_correct : false;
         $pointsEarned = $isCorrect ? $question->points : 0;
 
         return ExamAttemptAnswer::updateOrCreate(
@@ -92,7 +100,7 @@ class ExamService
                 'question_id' => $question->id,
             ],
             [
-                'option_id' => $optionId,
+                'option_id' => $option ? $option->id : null,
                 'answer_text' => $answerText,
                 'is_correct' => $isCorrect,
                 'points_earned' => $pointsEarned,

@@ -14,7 +14,7 @@ class ExamResult extends Component
 
     public function mount(ExamAttempt $attempt)
     {
-        $this->attempt = $attempt->load(['exam.questions.options', 'answers.question.options', 'user']);
+        $this->attempt = $attempt->load(['exam.questions.options', 'answers.option', 'answers.question.options', 'user']);
 
         $this->authorize('view', $this->attempt);
 
@@ -22,7 +22,19 @@ class ExamResult extends Component
             return redirect()->route('exam.take', $this->attempt);
         }
 
-        if ($this->attempt->score === null && in_array($this->attempt->status, ['completed', 'submitted', 'force_submitted', 'graded'])) {
+        // Clean up any corrupt legacy answers where option_id did not belong to question_id
+        $hasCorrupted = false;
+        foreach ($this->attempt->answers as $ans) {
+            if ($ans->option && $ans->option->question_id !== $ans->question_id) {
+                $ans->update(['option_id' => null, 'is_correct' => false, 'points_earned' => 0]);
+                $hasCorrupted = true;
+            }
+        }
+        if ($hasCorrupted) {
+            $this->attempt->load('answers.option');
+        }
+
+        if (($this->attempt->score === null || $hasCorrupted) && in_array($this->attempt->status, ['completed', 'submitted', 'force_submitted', 'graded'])) {
             $freshScore = app(ExamService::class)->calculateScore($this->attempt);
             $this->attempt->update(['score' => $freshScore]);
             $this->attempt->score = $freshScore;

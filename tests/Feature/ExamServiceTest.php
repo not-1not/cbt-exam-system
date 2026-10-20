@@ -163,6 +163,24 @@ class ExamServiceTest extends TestCase
         $this->assertEquals(75.00, $score);
     }
 
+    public function test_save_answer_rejects_option_from_different_question(): void
+    {
+        $this->expectException(\Illuminate\Validation\ValidationException::class);
+
+        $student = User::factory()->create();
+        $exam = Exam::factory()->create();
+
+        $q1 = Question::factory()->create(['exam_id' => $exam->id]);
+        $q2 = Question::factory()->create(['exam_id' => $exam->id]);
+
+        $optForQ2 = Option::factory()->create(['question_id' => $q2->id]);
+
+        $attempt = $this->service->startAttempt($student, $exam);
+
+        // Attempting to save Q2's option for Q1 must throw ValidationException!
+        $this->service->saveAnswer($attempt, $q1, $optForQ2->id);
+    }
+
     public function test_submit_attempt_marks_completed_and_saves_score(): void
     {
         $student = User::factory()->create();

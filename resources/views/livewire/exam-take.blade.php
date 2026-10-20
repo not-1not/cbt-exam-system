@@ -1,7 +1,7 @@
 <div x-data="{
     currentIndex: 0,
     totalQuestions: {{ count($questions) }},
-    answers: @js($answers),
+    answers: @js((object) $answers),
     flagged: @js($flaggedQuestions),
     saveStatus: 'Tersimpan',
     isSaving: false,
@@ -144,7 +144,10 @@
                     </div>
                 @else
                     @foreach($questions as $index => $q)
-                        <div x-show="currentIndex === {{ $index }}" x-cloak class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden transition-all duration-150">
+                        <div wire:key="q-card-{{ $q->id }}"
+                             x-show="currentIndex === {{ $index }}"
+                             x-cloak
+                             class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden transition-all duration-150">
                             <!-- Question Header -->
                             <div class="p-6 border-b border-gray-100 flex items-center justify-between bg-slate-50/60">
                                 <div class="flex items-center gap-3">
@@ -179,7 +182,8 @@
                                                 $labels = ['A', 'B', 'C', 'D', 'E', 'F'];
                                                 $letter = $labels[$optIndex] ?? ($optIndex + 1);
                                             ?>
-                                            <div @click="selectOption({{ $q->id }}, {{ $option->id }})"
+                                            <div wire:key="q-opt-{{ $q->id }}-{{ $option->id }}"
+                                                 @click="selectOption({{ $q->id }}, {{ $option->id }})"
                                                  :class="answers[{{ $q->id }}] == {{ $option->id }} ? 'border-indigo-600 bg-indigo-50/70 shadow-sm ring-1 ring-indigo-500' : 'border-gray-200 hover:border-gray-300 hover:bg-slate-50/60'"
                                                  class="flex items-start gap-4 p-4 sm:p-5 rounded-2xl border-2 cursor-pointer transition-all duration-100 select-none">
                                                 
@@ -251,7 +255,8 @@
                     <!-- Grid Buttons -->
                     <div class="grid grid-cols-5 gap-2 mb-6">
                         @foreach($questions as $index => $q)
-                            <button type="button"
+                            <button wire:key="q-nav-btn-{{ $q->id }}"
+                                    type="button"
                                     @click="goTo({{ $index }})"
                                     :class="{
                                         'ring-2 ring-indigo-600 border-indigo-600 font-extrabold': currentIndex === {{ $index }},

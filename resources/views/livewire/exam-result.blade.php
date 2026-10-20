@@ -123,9 +123,19 @@
                             <?php
                                 $answer = $attempt->answers->firstWhere('question_id', $question->id);
                                 $selectedOption = $answer?->option;
+                                // Validate that the option belongs to this question
+                                if ($selectedOption && $selectedOption->question_id !== $question->id) {
+                                    $selectedOption = null;
+                                }
                                 $correctOption = $question->options->firstWhere('is_correct', true);
-                                $isCorrect = (bool) ($answer?->is_correct ?? false);
-                                $hasAnswer = $selectedOption || !empty($answer?->answer_text);
+                                $isCorrect = (bool) ($answer?->is_correct ?? false) && $selectedOption !== null;
+                                $hasAnswer = $selectedOption !== null || !empty($answer?->answer_text);
+
+                                $optIdx = $selectedOption ? $question->options->search(fn($o) => $o->id === $selectedOption->id) : false;
+                                $optLetter = $optIdx !== false ? chr(65 + $optIdx) : '-';
+
+                                $correctIdx = $correctOption ? $question->options->search(fn($o) => $o->id === $correctOption->id) : false;
+                                $correctLetter = $correctIdx !== false ? chr(65 + $correctIdx) : '-';
                             ?>
                             <tr class="{{ $isCorrect ? 'bg-emerald-50/40 hover:bg-emerald-50/70' : ($hasAnswer ? 'bg-red-50/40 hover:bg-red-50/70' : 'bg-slate-50/40 hover:bg-slate-50/70') }} transition">
                                 <td class="px-4 py-3.5 font-bold text-gray-900">{{ $index + 1 }}</td>
@@ -135,7 +145,7 @@
                                 <td class="px-4 py-3.5 font-medium text-gray-900">
                                     @if($selectedOption)
                                         <span class="inline-flex items-center gap-1.5">
-                                            <span class="font-bold text-indigo-600">({{ chr(65 + $question->options->search(fn($o) => $o->id === $selectedOption->id)) }})</span>
+                                            <span class="font-bold text-indigo-600">({{ $optLetter }})</span>
                                             <span>{{ $selectedOption->text }}</span>
                                         </span>
                                     @elseif($answer?->answer_text)
@@ -147,7 +157,7 @@
                                 <td class="px-4 py-3.5 font-medium text-emerald-800">
                                     @if($correctOption)
                                         <span class="inline-flex items-center gap-1.5">
-                                            <span class="font-bold">({{ chr(65 + $question->options->search(fn($o) => $o->id === $correctOption->id)) }})</span>
+                                            <span class="font-bold">({{ $correctLetter }})</span>
                                             <span>{{ $correctOption->text }}</span>
                                         </span>
                                     @else
